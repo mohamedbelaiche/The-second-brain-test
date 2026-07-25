@@ -34,26 +34,30 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 function getNotionKey() {
-  return config.notionApiKey || process.env.NOTION_API_KEY || '';
+  return process.env.NOTION_API_KEY || config.notionApiKey || '';
 }
 function getDatabaseId() {
-  return config.notionDatabaseId || process.env.NOTION_DATABASE_ID || '';
+  return process.env.NOTION_DATABASE_ID || config.notionDatabaseId || '';
 }
 function getAiKey() {
-  return config.aiApiKey || process.env.OPENCODE_ZEN_API_KEY || '';
+  return process.env.OPENCODE_ZEN_API_KEY || config.aiApiKey || '';
 }
 function getAiUrl() {
-  return config.aiApiUrl || process.env.OPENCODE_ZEN_API_URL || 'https://api.openai.com/v1';
+  return process.env.OPENCODE_ZEN_API_URL || config.aiApiUrl || 'https://api.openai.com/v1';
 }
 function getAiModel() {
-  return config.aiModel || process.env.OPENCODE_ZEN_MODEL || 'gpt-4o';
+  return process.env.OPENCODE_ZEN_MODEL || config.aiModel || 'gpt-4o';
 }
 
 function getNotionClient() {
   return new Client({ auth: getNotionKey() });
 }
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Notion-Api-Key', 'X-Notion-Database-Id', 'X-Ai-Api-Key', 'X-Ai-Api-Url', 'X-Ai-Model'],
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -557,7 +561,7 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 app.get('/map', (req, res) => res.sendFile(path.join(__dirname, 'public', 'map.html')));
 app.get('/evaluation', (req, res) => res.sendFile(path.join(__dirname, 'public', 'evaluation.html')));
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🧠 العقل الثاني - لوحة التحكم`);
   console.log(`✅ الخادم يعمل على: http://localhost:${PORT}`);
   console.log(`📊 Dashboard:   http://localhost:${PORT}/`);
