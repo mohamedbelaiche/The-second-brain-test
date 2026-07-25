@@ -45,6 +45,10 @@
         <span class="nav-icon">🤖</span>
         تحليل AI
       </a>
+      <a href="#" class="nav-item" onclick="openSettingsModal(); return false;">
+        <span class="nav-icon">⚙️</span>
+        الإعدادات
+      </a>
     </nav>
     
     <div class="sidebar-status">
@@ -192,6 +196,54 @@
       <button class="btn btn-ghost" onclick="closeModal('add-modal')">إلغاء</button>
       <button class="btn btn-primary" onclick="addIdea()">
         <span>✨</span> حفظ الفكرة
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:550px;">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ إعدادات الاتصال</div>
+      <button class="modal-close" onclick="closeModal('settings-modal')">✕</button>
+    </div>
+    
+    <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid var(--border);">
+      <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7;">
+        <strong>ملاحظة:</strong> أدخل مفاتيح API الخاصة بك هنا. يتم حفظها محلياً على الخادم فقط ولن تُرفع إلى GitHub.
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notion API Key <span style="color:var(--danger);">*</span></label>
+      <input type="password" id="settings-notion-key" class="form-input" placeholder="ntn_xxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notion Database ID <span style="color:var(--danger);">*</span></label>
+      <input type="text" id="settings-database-id" class="form-input" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <div style="height:1px;background:var(--border);margin:20px 0;"></div>
+    <div style="font-weight:600;margin-bottom:14px;color:var(--text);">إعدادات الذكاء الاصطناعي (اختياري)</div>
+    <div class="form-group">
+      <label class="form-label">AI API Key</label>
+      <input type="password" id="settings-ai-key" class="form-input" placeholder="sk-xxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <div class="form-group">
+      <label class="form-label">AI API URL</label>
+      <input type="text" id="settings-ai-url" class="form-input" placeholder="https://api.openai.com/v1">
+    </div>
+    <div class="form-group">
+      <label class="form-label">AI Model</label>
+      <input type="text" id="settings-ai-model" class="form-input" placeholder="gpt-4o">
+    </div>
+    
+    <div id="settings-status" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;"></div>
+    
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;">
+      <button class="btn btn-ghost" onclick="closeModal('settings-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveSettings()">
+        <span>💾</span> حفظ الإعدادات
       </button>
     </div>
   </div>

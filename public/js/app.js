@@ -518,6 +518,76 @@ function showToast(message, type = 'info') {
 }
 
 // ----------------------------------------
+// SETTINGS
+// ----------------------------------------
+
+async function openSettingsModal() {
+  openModal('settings-modal');
+  const statusEl = document.getElementById('settings-status');
+  statusEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    if (data.success && data.settings) {
+      document.getElementById('settings-notion-key').value = data.settings.notionApiKey || '';
+      document.getElementById('settings-database-id').value = data.settings.notionDatabaseId || '';
+      document.getElementById('settings-ai-key').value = data.settings.aiApiKey || '';
+      document.getElementById('settings-ai-url').value = data.settings.aiApiUrl || '';
+      document.getElementById('settings-ai-model').value = data.settings.aiModel || '';
+    }
+  } catch(e) {
+    console.error('Failed to load settings:', e);
+  }
+}
+
+async function saveSettings() {
+  const statusEl = document.getElementById('settings-status');
+  const notionKey = document.getElementById('settings-notion-key').value.trim();
+  const databaseId = document.getElementById('settings-database-id').value.trim();
+
+  if (!notionKey || !databaseId) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(239,68,68,0.1)';
+    statusEl.style.color = 'var(--accent-rose)';
+    statusEl.textContent = '❌ يرجى إدخال Notion API Key و Database ID على الأقل';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notionApiKey: notionKey,
+        notionDatabaseId: databaseId,
+        aiApiKey: document.getElementById('settings-ai-key').value.trim(),
+        aiApiUrl: document.getElementById('settings-ai-url').value.trim(),
+        aiModel: document.getElementById('settings-ai-model').value.trim(),
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = 'rgba(16,185,129,0.1)';
+      statusEl.style.color = 'var(--accent-emerald)';
+      statusEl.textContent = '✅ تم حفظ الإعدادات! جارٍ إعادة تشغيل الخادم...';
+      setTimeout(() => {
+        closeModal('settings-modal');
+        location.reload();
+      }, 1500);
+    } else {
+      throw new Error(data.error || 'Unknown error');
+    }
+  } catch(e) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(239,68,68,0.1)';
+    statusEl.style.color = 'var(--accent-rose)';
+    statusEl.textContent = '❌ فشل الحفظ: ' + e.message;
+  }
+}
+
+// ----------------------------------------
 // UTILS
 // ----------------------------------------
 

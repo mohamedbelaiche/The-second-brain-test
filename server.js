@@ -1,16 +1,52 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const { Client } = require('@notionhq/client');
 const fetch = require('node-fetch');
 const path = require('path');
 
+const CONFIG_PATH = path.join(__dirname, 'config.json');
+
+function loadConfig() {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Error loading config.json:', e.message);
+  }
+  return {};
+}
+
+function saveConfig(cfg) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf8');
+}
+
+let config = loadConfig();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Notion client
-const notion = new Client({ auth: process.env.NOTION_API_KEY });
-const DATABASE_ID = process.env.NOTION_DATABASE_ID;
+function getNotionKey() {
+  return config.notionApiKey || process.env.NOTION_API_KEY || '';
+}
+function getDatabaseId() {
+  return config.notionDatabaseId || process.env.NOTION_DATABASE_ID || '';
+}
+function getAiKey() {
+  return config.aiApiKey || process.env.OPENCODE_ZEN_API_KEY || '';
+}
+function getAiUrl() {
+  return config.aiApiUrl || process.env.OPENCODE_ZEN_API_URL || 'https://api.openai.com/v1';
+}
+function getAiModel() {
+  return config.aiModel || process.env.OPENCODE_ZEN_MODEL || 'gpt-4o';
+}
+
+function getNotionClient() {
+  return new Client({ auth: getNotionKey() });
+}
 
 app.use(cors());
 app.use(express.json());
@@ -22,9 +58,43 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api/status', (req, res) => {
   res.json({
     success: true,
-    notion: !!process.env.NOTION_API_KEY,
-    ai: !!process.env.OPENCODE_ZEN_API_KEY
+    notion: !!getNotionKey(),
+    ai: !!getAiKey()
   });
+});
+
+// ============================================================
+// SETTINGS ROUTES
+// ============================================================
+app.get('/api/settings', (req, res) => {
+  res.json({
+    success: true,
+    settings: {
+      notionApiKey: getNotionKey(),
+      notionDatabaseId: getDatabaseId(),
+      aiApiKey: getAiKey(),
+      aiApiUrl: getAiUrl(),
+      aiModel: getAiModel(),
+    }
+  });
+});
+
+app.post('/api/settings', (req, res) => {
+  try {
+    const { notionApiKey, notionDatabaseId, aiApiKey, aiApiUrl, aiModel } = req.body;
+    config = {
+      notionApiKey: notionApiKey || config.notionApiKey || '',
+      notionDatabaseId: notionDatabaseId || config.notionDatabaseId || '',
+      aiApiKey: aiApiKey || config.aiApiKey || '',
+      aiApiUrl: aiApiUrl || config.aiApiUrl || '',
+      aiModel: aiModel || config.aiModel || '',
+    };
+    saveConfig(config);
+    console.log('✅ Settings saved to config.json');
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
 });
 
 // ============================================================
@@ -34,8 +104,9 @@ app.get('/api/status', (req, res) => {
 // Get all ideas from Notion database
 app.get('/api/ideas', async (req, res) => {
   try {
+    const notion = getNotionClient();
     const response = await notion.databases.query({
-      database_id: DATABASE_ID,
+      database_id: getDatabaseId(),
       sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }],
       page_size: 100,
     });
@@ -51,7 +122,8 @@ app.get('/api/ideas', async (req, res) => {
 // Get database schema/properties
 app.get('/api/schema', async (req, res) => {
   try {
-    const db = await notion.databases.retrieve({ database_id: DATABASE_ID });
+    const notion = getNotionClient();
+    const db = await notion.databases.retrieve({ database_id: getDatabaseId() });
     res.json({ success: true, schema: db.properties, title: db.title });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -61,6 +133,7 @@ app.get('/api/schema', async (req, res) => {
 // Get single idea by page ID
 app.get('/api/ideas/:id', async (req, res) => {
   try {
+    const notion = getNotionClient();
     const page = await notion.pages.retrieve({ page_id: req.params.id });
     const blocks = await notion.blocks.children.list({ block_id: req.params.id });
     res.json({ success: true, idea: formatPage(page), content: blocks.results });
@@ -72,6 +145,7 @@ app.get('/api/ideas/:id', async (req, res) => {
 // Create new idea in Notion
 app.post('/api/ideas', async (req, res) => {
   try {
+    const notion = getNotionClient();
     const { title, content, tags, category, status } = req.body;
     
     const properties = {
@@ -89,7 +163,7 @@ app.post('/api/ideas', async (req, res) => {
     }] : [];
 
     const page = await notion.pages.create({
-      parent: { database_id: DATABASE_ID },
+      parent: { database_id: getDatabaseId() },
       properties,
       children,
     });
@@ -104,6 +178,7 @@ app.post('/api/ideas', async (req, res) => {
 // Update idea in Notion
 app.patch('/api/ideas/:id', async (req, res) => {
   try {
+    const notion = getNotionClient();
     const { title, tags, category, status } = req.body;
     const properties = {};
 
@@ -126,6 +201,7 @@ app.patch('/api/ideas/:id', async (req, res) => {
 // Delete (archive) idea
 app.delete('/api/ideas/:id', async (req, res) => {
   try {
+    const notion = getNotionClient();
     await notion.pages.update({
       page_id: req.params.id,
       archived: true,
@@ -257,9 +333,9 @@ ${ideasSample}
 // ============================================================
 
 async function callAI(prompt) {
-  const apiKey = process.env.OPENCODE_ZEN_API_KEY;
-  const apiUrl = process.env.OPENCODE_ZEN_API_URL || 'https://api.openai.com/v1';
-  const model = process.env.OPENCODE_ZEN_MODEL || 'gpt-4o';
+  const apiKey = getAiKey();
+  const apiUrl = getAiUrl();
+  const model = getAiModel();
 
   if (!apiKey) {
     console.warn('No AI API key set — using demo data');
