@@ -13,9 +13,11 @@
 <div class="toast-container" id="toast-container"></div>
 
 <div class="app-layout">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
+      <button class="hamburger-btn sidebar-close-btn" onclick="toggleSidebar()">✕</button>
       <div class="logo-icon">🧠</div>
       <div class="logo-title">العقل الثاني</div>
       <div class="logo-subtitle">Second Brain Dashboard</div>
@@ -67,16 +69,19 @@
   <main class="main-content">
     <!-- TOP BAR -->
     <header class="topbar">
-      <div class="topbar-title">📊 لوحة التحكم الرئيسية</div>
+      <div class="topbar-right">
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title">📊 لوحة التحكم الرئيسية</div>
+      </div>
       <div class="topbar-actions">
         <button class="btn btn-ghost btn-sm" onclick="loadIdeas()" id="refresh-btn">
-          <span>🔄</span> تحديث
+          <span>🔄</span> <span class="btn-text-desktop">تحديث</span>
         </button>
         <button class="btn btn-secondary btn-sm" onclick="triggerAIAnalysis()">
-          <span>🤖</span> تحليل AI
+          <span>🤖</span> <span class="btn-text-desktop">تحليل AI</span>
         </button>
         <button class="btn btn-primary btn-sm" onclick="openAddModal()">
-          <span>✨</span> فكرة جديدة
+          <span>✨</span> <span class="btn-text-desktop">فكرة جديدة</span>
         </button>
       </div>
     </header>

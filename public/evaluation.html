@@ -18,6 +18,9 @@
       position: relative;
       overflow: hidden;
     }
+    @media (max-width: 768px) {
+      .eval-hero { padding: 24px 16px; margin-bottom: 20px; }
+    }
     .eval-hero::before {
       content: '';
       position: absolute;
@@ -97,9 +100,11 @@
 <div class="toast-container" id="toast-container"></div>
 
 <div class="app-layout">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
+      <button class="hamburger-btn sidebar-close-btn" onclick="toggleSidebar()">✕</button>
       <div class="logo-icon">🧠</div>
       <div class="logo-title">العقل الثاني</div>
       <div class="logo-subtitle">Second Brain Dashboard</div>
@@ -134,12 +139,15 @@
   <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
-      <div class="topbar-title">📈 تقييم أداء قاعدة المعرفة</div>
+      <div class="topbar-right">
+        <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title">📈 تقييم أداء قاعدة المعرفة</div>
+      </div>
       <div class="topbar-actions">
-        <button class="btn btn-ghost btn-sm" onclick="loadData()">🔄 تحديث البيانات</button>
-        <button class="btn btn-secondary btn-sm" onclick="getSuggestions()">💡 اقتراحات</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadData()">🔄 <span class="btn-text-desktop">تحديث البيانات</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="getSuggestions()">💡 <span class="btn-text-desktop">اقتراحات</span></button>
         <button class="btn btn-primary btn-sm" onclick="runEvaluation()">
-          🚀 تشغيل التقييم الكامل
+          🚀 <span class="btn-text-desktop">تشغيل التقييم الكامل</span>
         </button>
       </div>
     </header>

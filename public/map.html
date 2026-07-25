@@ -36,6 +36,8 @@
       padding: 16px 20px;
       backdrop-filter: blur(10px);
       font-size: 0.78rem;
+      max-height: 50%;
+      overflow-y: auto;
     }
     .legend-item {
       display: flex;
@@ -48,6 +50,7 @@
       width: 14px;
       height: 14px;
       border-radius: 50%;
+      flex-shrink: 0;
     }
     
     .map-info-panel {
@@ -83,6 +86,10 @@
       transition: var(--transition);
       font-family: var(--font);
     }
+    @media (max-width: 768px) {
+      .map-legend { display: none; }
+      .map-info-panel { max-width: 200px; padding: 14px; top: 10px; right: 10px; }
+    }
   </style>
 </head>
 <body class="map-page">
@@ -90,9 +97,11 @@
 <div class="toast-container" id="toast-container"></div>
 
 <div class="app-layout">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
+      <button class="hamburger-btn sidebar-close-btn" onclick="toggleSidebar()">✕</button>
       <div class="logo-icon">🧠</div>
       <div class="logo-title">العقل الثاني</div>
       <div class="logo-subtitle">Second Brain Dashboard</div>
@@ -135,15 +144,18 @@
   <!-- MAIN -->
   <main class="main-content">
     <header class="topbar">
-      <div class="topbar-title">🗺️ خريطة الروابط البصرية</div>
+      <div class="topbar-right">
+        <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title">🗺️ خريطة الروابط البصرية</div>
+      </div>
       <div class="topbar-actions">
-        <button class="btn btn-ghost btn-sm" onclick="loadMapData()">🔄 تحديث</button>
-        <button class="btn btn-secondary btn-sm" onclick="runAICluster()">🤖 تحليل الروابط</button>
-        <button class="btn btn-primary btn-sm" onclick="exportMap()">📸 تصدير</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadMapData()">🔄 <span class="btn-text-desktop">تحديث</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="runAICluster()">🤖 <span class="btn-text-desktop">تحليل الروابط</span></button>
+        <button class="btn btn-primary btn-sm" onclick="exportMap()">📸 <span class="btn-text-desktop">تصدير</span></button>
       </div>
     </header>
 
-    <div class="content-area" style="padding:20px 30px;">
+    <div class="content-area map-content">
       
       <!-- AI Cluster Panel -->
       <div id="cluster-panel" style="display:none;margin-bottom:20px;">
