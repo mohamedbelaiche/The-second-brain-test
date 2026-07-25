@@ -7,6 +7,28 @@ let allNodes = [], allLinks = [];
 let physicsRunning = true;
 let clusterData = null;
 
+// ----------------------------------------
+// LOCALSTORAGE SETTINGS HELPERS
+// ----------------------------------------
+
+function getLocalSettings() {
+  try {
+    const raw = localStorage.getItem('brain_settings');
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function getSettingsHeaders() {
+  const s = getLocalSettings();
+  const headers = {};
+  if (s.notionApiKey) headers['X-Notion-Api-Key'] = s.notionApiKey;
+  if (s.notionDatabaseId) headers['X-Notion-Database-Id'] = s.notionDatabaseId;
+  if (s.aiApiKey) headers['X-Ai-Api-Key'] = s.aiApiKey;
+  if (s.aiApiUrl) headers['X-Ai-Api-Url'] = s.aiApiUrl;
+  if (s.aiModel) headers['X-Ai-Model'] = s.aiModel;
+  return headers;
+}
+
 const CATEGORY_COLORS = [
   '#6441e6', '#06b6d4', '#f59e0b', '#10b981',
   '#f43f5e', '#8b5cf6', '#ec4899', '#14b8a6',
@@ -84,7 +106,7 @@ async function loadMapData() {
   g.selectAll('*').remove();
 
   try {
-    const res = await fetch('/api/ideas');
+    const res = await fetch('/api/ideas', { headers: getSettingsHeaders() });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
@@ -420,7 +442,7 @@ async function runAICluster() {
 
     const res = await fetch('/api/ai/analyze-connections', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
       body: JSON.stringify({ ideas }),
     });
     const data = await res.json();

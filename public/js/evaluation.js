@@ -6,6 +6,28 @@ let allIdeas = [];
 let radarChart = null;
 
 // ----------------------------------------
+// LOCALSTORAGE SETTINGS HELPERS
+// ----------------------------------------
+
+function getLocalSettings() {
+  try {
+    const raw = localStorage.getItem('brain_settings');
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function getSettingsHeaders() {
+  const s = getLocalSettings();
+  const headers = {};
+  if (s.notionApiKey) headers['X-Notion-Api-Key'] = s.notionApiKey;
+  if (s.notionDatabaseId) headers['X-Notion-Database-Id'] = s.notionDatabaseId;
+  if (s.aiApiKey) headers['X-Ai-Api-Key'] = s.aiApiKey;
+  if (s.aiApiUrl) headers['X-Ai-Api-Url'] = s.aiApiUrl;
+  if (s.aiModel) headers['X-Ai-Model'] = s.aiModel;
+  return headers;
+}
+
+// ----------------------------------------
 // INIT
 // ----------------------------------------
 
@@ -19,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadData() {
   try {
-    const res = await fetch('/api/ideas');
+    const res = await fetch('/api/ideas', { headers: getSettingsHeaders() });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
     
@@ -72,7 +94,7 @@ async function runEvaluation() {
 
     const res = await fetch('/api/ai/evaluate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
       body: JSON.stringify({ ideas: allIdeas, stats }),
     });
     const data = await res.json();
@@ -374,7 +396,7 @@ async function getSuggestions() {
   try {
     const res = await fetch('/api/ai/suggest', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
       body: JSON.stringify({ ideas: allIdeas, count: 6 }),
     });
     const data = await res.json();
@@ -430,7 +452,7 @@ async function addToNotion(title, description, category) {
     showToast('⏳ جارٍ الإضافة إلى Notion...', 'info');
     const res = await fetch('/api/ideas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
       body: JSON.stringify({ title, content: description, category: category || 'AI مقترح' }),
     });
     const data = await res.json();

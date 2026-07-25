@@ -7,6 +7,32 @@ let currentEditId = null;
 let dbCategories = [];
 
 // ----------------------------------------
+// LOCALSTORAGE SETTINGS HELPERS
+// ----------------------------------------
+
+function getLocalSettings() {
+  try {
+    const raw = localStorage.getItem('brain_settings');
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveLocalSettings(settings) {
+  localStorage.setItem('brain_settings', JSON.stringify(settings));
+}
+
+function getSettingsHeaders() {
+  const s = getLocalSettings();
+  const headers = {};
+  if (s.notionApiKey) headers['X-Notion-Api-Key'] = s.notionApiKey;
+  if (s.notionDatabaseId) headers['X-Notion-Database-Id'] = s.notionDatabaseId;
+  if (s.aiApiKey) headers['X-Ai-Api-Key'] = s.aiApiKey;
+  if (s.aiApiUrl) headers['X-Ai-Api-Url'] = s.aiApiUrl;
+  if (s.aiModel) headers['X-Ai-Model'] = s.aiModel;
+  return headers;
+}
+
+// ----------------------------------------
 // INIT
 // ----------------------------------------
 
@@ -17,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadSchema() {
   try {
-    const res = await fetch('/api/schema');
+    const res = await fetch('/api/schema', { headers: getSettingsHeaders() });
     const data = await res.json();
     if (data.success && data.schema['الفئة']?.select?.options) {
       dbCategories = data.schema['الفئة'].select.options.map(o => o.name);
@@ -44,7 +70,7 @@ async function loadIdeas() {
     </div>`;
 
   try {
-    const response = await fetch('/api/ideas');
+    const response = await fetch('/api/ideas', { headers: getSettingsHeaders() });
     const data = await response.json();
 
     if (!data.success) throw new Error(data.error || 'خطأ في التحميل');
@@ -240,7 +266,7 @@ async function addIdea() {
     showToast('⏳ جارٍ الحفظ في Notion...', 'info');
     const res = await fetch('/api/ideas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -305,7 +331,7 @@ async function saveEdit() {
   try {
     const res = await fetch(`/api/ideas/${currentEditId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
       body: JSON.stringify({
         title,
         category: document.getElementById('edit-category').value.trim(),
@@ -327,7 +353,7 @@ async function deleteIdea(id) {
   if (!confirm('هل تريد حذف هذه الفكرة؟ (سيتم أرشفتها في Notion)')) return;
 
   try {
-    const res = await fetch(`/api/ideas/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/ideas/${id}`, { method: 'DELETE', headers: getSettingsHeaders() });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
@@ -368,7 +394,7 @@ async function triggerAIAnalysis() {
   try {
     const res = await fetch('/api/ai/analyze-connections', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
       body: JSON.stringify({ ideas: allIdeas }),
     });
     const data = await res.json();
@@ -428,7 +454,7 @@ async function addSuggestedIdea(title, rationale) {
   try {
     const res = await fetch('/api/ideas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
       body: JSON.stringify({ title, content: rationale, category: 'AI مقترح' }),
     });
     const data = await res.json();
@@ -446,7 +472,7 @@ async function addSuggestedIdea(title, rationale) {
 
 function updateConnectionStatus(connected) {
   // Always fetch real status from the backend to update both Notion and AI indicators
-  fetch('/api/status')
+  fetch('/api/status', { headers: getSettingsHeaders() })
     .then(res => res.json())
     .then(data => {
       // Notion
@@ -526,21 +552,30 @@ async function openSettingsModal() {
   const statusEl = document.getElementById('settings-status');
   statusEl.style.display = 'none';
 
+  const local = getLocalSettings();
+
   try {
-    const res = await fetch('/api/settings');
+    const res = await fetch('/api/settings', { headers: getSettingsHeaders() });
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const text = await res.text();
     const data = JSON.parse(text);
     if (data.success && data.settings) {
-      document.getElementById('settings-notion-key').value = data.settings.notionApiKey || '';
-      document.getElementById('settings-database-id').value = data.settings.notionDatabaseId || '';
-      document.getElementById('settings-ai-key').value = data.settings.aiApiKey || '';
-      document.getElementById('settings-ai-url').value = data.settings.aiApiUrl || '';
-      document.getElementById('settings-ai-model').value = data.settings.aiModel || '';
+      document.getElementById('settings-notion-key').value = data.settings.notionApiKey || local.notionApiKey || '';
+      document.getElementById('settings-database-id').value = data.settings.notionDatabaseId || local.notionDatabaseId || '';
+      document.getElementById('settings-ai-key').value = data.settings.aiApiKey || local.aiApiKey || '';
+      document.getElementById('settings-ai-url').value = data.settings.aiApiUrl || local.aiApiUrl || '';
+      document.getElementById('settings-ai-model').value = data.settings.aiModel || local.aiModel || '';
+      return;
     }
   } catch(e) {
-    console.error('Failed to load settings:', e);
+    console.warn('Server settings load failed, using localStorage:', e);
   }
+
+  document.getElementById('settings-notion-key').value = local.notionApiKey || '';
+  document.getElementById('settings-database-id').value = local.notionDatabaseId || '';
+  document.getElementById('settings-ai-key').value = local.aiApiKey || '';
+  document.getElementById('settings-ai-url').value = local.aiApiUrl || '';
+  document.getElementById('settings-ai-model').value = local.aiModel || '';
 }
 
 async function saveSettings() {
@@ -556,39 +591,49 @@ async function saveSettings() {
     return;
   }
 
+  const settings = {
+    notionApiKey: notionKey,
+    notionDatabaseId: databaseId,
+    aiApiKey: document.getElementById('settings-ai-key').value.trim(),
+    aiApiUrl: document.getElementById('settings-ai-url').value.trim(),
+    aiModel: document.getElementById('settings-ai-model').value.trim(),
+  };
+
+  // Always save to localStorage first (works on any hosting)
+  saveLocalSettings(settings);
+
+  // Try to save to server as well
+  let serverOk = false;
   try {
     const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        notionApiKey: notionKey,
-        notionDatabaseId: databaseId,
-        aiApiKey: document.getElementById('settings-ai-key').value.trim(),
-        aiApiUrl: document.getElementById('settings-ai-url').value.trim(),
-        aiModel: document.getElementById('settings-ai-model').value.trim(),
-      }),
+      body: JSON.stringify(settings),
     });
     const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch { throw new Error('الخادم لا يدعم هذا الطلب. تأكد من تشغيل الخادم بالكود الأخير.'); }
-    if (data.success) {
-      statusEl.style.display = 'block';
-      statusEl.style.background = 'rgba(16,185,129,0.1)';
-      statusEl.style.color = 'var(--accent-emerald)';
-      statusEl.textContent = '✅ تم حفظ الإعدادات! جارٍ إعادة تشغيل الخادم...';
-      setTimeout(() => {
-        closeModal('settings-modal');
-        location.reload();
-      }, 1500);
-    } else {
-      throw new Error(data.error || 'Unknown error');
+    try {
+      const data = JSON.parse(text);
+      serverOk = data.success === true;
+    } catch {
+      // Server returned HTML (hosting issue) — localStorage is enough
+      console.warn('Server returned non-JSON response, using localStorage only');
     }
   } catch(e) {
-    statusEl.style.display = 'block';
-    statusEl.style.background = 'rgba(239,68,68,0.1)';
-    statusEl.style.color = 'var(--accent-rose)';
-    statusEl.textContent = '❌ فشل الحفظ: ' + e.message;
+    console.warn('Server save failed, using localStorage:', e.message);
   }
+
+  statusEl.style.display = 'block';
+  statusEl.style.background = 'rgba(16,185,129,0.1)';
+  statusEl.style.color = 'var(--accent-emerald)';
+  if (serverOk) {
+    statusEl.textContent = '✅ تم حفظ الإعدادات بنجاح!';
+  } else {
+    statusEl.textContent = '✅ تم حفظ الإعدادات في المتصفح! (localStorage)';
+  }
+  setTimeout(() => {
+    closeModal('settings-modal');
+    location.reload();
+  }, 1500);
 }
 
 // ----------------------------------------

@@ -20,7 +20,12 @@ function loadConfig() {
 }
 
 function saveConfig(cfg) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf8');
+  try {
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf8');
+    console.log('✅ Config saved to config.json');
+  } catch (e) {
+    console.warn('⚠️ Could not write config.json (read-only filesystem?):', e.message);
+  }
 }
 
 let config = loadConfig();
@@ -51,6 +56,23 @@ function getNotionClient() {
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Middleware: if server config is empty, try to read from client-sent headers
+app.use((req, res, next) => {
+  const hKey = req.headers['x-notion-api-key'];
+  const hDb = req.headers['x-notion-database-id'];
+  const hAiKey = req.headers['x-ai-api-key'];
+  const hAiUrl = req.headers['x-ai-api-url'];
+  const hAiModel = req.headers['x-ai-model'];
+
+  if (hKey && !config.notionApiKey) config.notionApiKey = hKey;
+  if (hDb && !config.notionDatabaseId) config.notionDatabaseId = hDb;
+  if (hAiKey && !config.aiApiKey) config.aiApiKey = hAiKey;
+  if (hAiUrl && !config.aiApiUrl) config.aiApiUrl = hAiUrl;
+  if (hAiModel && !config.aiModel) config.aiModel = hAiModel;
+
+  next();
+});
 
 // ============================================================
 // STATUS & CONFIG ROUTES
@@ -90,7 +112,6 @@ app.post('/api/settings', (req, res) => {
       aiModel: aiModel || config.aiModel || '',
     };
     saveConfig(config);
-    console.log('✅ Settings saved to config.json');
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
