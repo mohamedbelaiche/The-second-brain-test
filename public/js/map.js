@@ -7,28 +7,6 @@ let allNodes = [], allLinks = [];
 let physicsRunning = true;
 let clusterData = null;
 
-// ----------------------------------------
-// LOCALSTORAGE SETTINGS HELPERS
-// ----------------------------------------
-
-function getLocalSettings() {
-  try {
-    const raw = localStorage.getItem('brain_settings');
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
-}
-
-function getSettingsHeaders() {
-  const s = getLocalSettings();
-  const headers = {};
-  if (s.notionApiKey) headers['X-Notion-Api-Key'] = s.notionApiKey;
-  if (s.notionDatabaseId) headers['X-Notion-Database-Id'] = s.notionDatabaseId;
-  if (s.aiApiKey) headers['X-Ai-Api-Key'] = s.aiApiKey;
-  if (s.aiApiUrl) headers['X-Ai-Api-Url'] = s.aiApiUrl;
-  if (s.aiModel) headers['X-Ai-Model'] = s.aiModel;
-  return headers;
-}
-
 const CATEGORY_COLORS = [
   '#6441e6', '#06b6d4', '#f59e0b', '#10b981',
   '#f43f5e', '#8b5cf6', '#ec4899', '#14b8a6',
@@ -65,7 +43,6 @@ function initSVG() {
     .attr('width', width)
     .attr('height', height);
 
-  // Define gradient defs
   const defs = svg.append('defs');
   
   const linearGrad = defs.append('linearGradient')
@@ -74,7 +51,6 @@ function initSVG() {
   linearGrad.append('stop').attr('offset', '0%').attr('stop-color', '#6441e6').attr('stop-opacity', 0.6);
   linearGrad.append('stop').attr('offset', '100%').attr('stop-color', '#06b6d4').attr('stop-opacity', 0.2);
 
-  // Arrow marker
   defs.append('marker')
     .attr('id', 'arrow')
     .attr('viewBox', '0 -5 10 10')
@@ -106,8 +82,7 @@ async function loadMapData() {
   g.selectAll('*').remove();
 
   try {
-    const res = await fetch('/api/ideas', { headers: getSettingsHeaders() });
-    const data = await res.json();
+    const data = await smartFetch('/api/ideas');
     if (!data.success) throw new Error(data.error);
 
     buildGraph(data.ideas);
@@ -124,7 +99,6 @@ async function loadMapData() {
 // ----------------------------------------
 
 function buildGraph(ideas) {
-  // Build nodes
   allNodes = ideas.map(idea => ({
     id: idea.id,
     title: idea.title,
@@ -138,24 +112,20 @@ function buildGraph(ideas) {
     r: 10 + Math.min((idea.tags || []).length * 2, 10),
   }));
 
-  // Build links based on shared tags or category
   allLinks = [];
   for (let i = 0; i < allNodes.length; i++) {
     for (let j = i + 1; j < allNodes.length; j++) {
-      const nodeA = allNodes[i];
-      const nodeB = allNodes[j];
-      const strength = calculateLinkStrength(nodeA, nodeB);
+      const strength = calculateLinkStrength(allNodes[i], allNodes[j]);
       if (strength > 0) {
         allLinks.push({
-          source: nodeA.id,
-          target: nodeB.id,
+          source: allNodes[i].id,
+          target: allNodes[j].id,
           strength,
         });
       }
     }
   }
 
-  // Keep only strong links (top connections per node)
   const linksPerNode = new Map();
   allLinks.forEach(l => {
     const src = typeof l.source === 'object' ? l.source.id : l.source;
@@ -182,20 +152,13 @@ function buildGraph(ideas) {
 
 function calculateLinkStrength(a, b) {
   let strength = 0;
-
-  // Same category
   if (a.category && b.category && a.category === b.category) strength += 0.4;
-
-  // Shared tags
   const sharedTags = a.tags.filter(t => b.tags.includes(t));
   strength += sharedTags.length * 0.3;
-
-  // Similar title words
   const wordsA = a.title.split(/\s+/).filter(w => w.length > 3);
   const wordsB = b.title.split(/\s+/).filter(w => w.length > 3);
   const sharedWords = wordsA.filter(w => wordsB.includes(w));
   strength += sharedWords.length * 0.2;
-
   return Math.min(strength, 1);
 }
 
@@ -208,7 +171,6 @@ function renderGraph() {
   const width = container.offsetWidth;
   const height = container.offsetHeight;
 
-  // Simulation
   simulation = d3.forceSimulation(allNodes)
     .force('link', d3.forceLink(allLinks)
       .id(d => d.id)
@@ -222,7 +184,6 @@ function renderGraph() {
     .alpha(1)
     .alphaDecay(0.02);
 
-  // Links layer
   const linkGroup = g.append('g').attr('class', 'links');
   const link = linkGroup.selectAll('line')
     .data(allLinks)
@@ -236,7 +197,6 @@ function renderGraph() {
     .attr('stroke-opacity', d => 0.2 + d.strength * 0.5)
     .attr('marker-end', 'url(#arrow)');
 
-  // Nodes layer
   const nodeGroup = g.append('g').attr('class', 'nodes');
   const node = nodeGroup.selectAll('.node')
     .data(allNodes)
@@ -250,14 +210,12 @@ function renderGraph() {
     .on('mouseover', (event, d) => showTooltip(event, d))
     .on('mouseout', hideTooltip);
 
-  // Glow filter
   const filter = svg.select('defs').append('filter').attr('id', 'glow');
   filter.append('feGaussianBlur').attr('stdDeviation', 3).attr('result', 'coloredBlur');
   const feMerge = filter.append('feMerge');
   feMerge.append('feMergeNode').attr('in', 'coloredBlur');
   feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-  // Outer ring (glow)
   node.append('circle')
     .attr('r', d => d.r + 4)
     .attr('fill', 'none')
@@ -266,7 +224,6 @@ function renderGraph() {
     .attr('stroke-opacity', 0.3)
     .attr('filter', 'url(#glow)');
 
-  // Main circle
   node.append('circle')
     .attr('class', 'node-circle')
     .attr('r', d => d.r)
@@ -282,7 +239,6 @@ function renderGraph() {
       d3.select(this).transition().duration(200).attr('r', d => d.r);
     });
 
-  // Icon
   node.append('text')
     .attr('class', 'node-label')
     .attr('dy', '0.4em')
@@ -290,7 +246,6 @@ function renderGraph() {
     .style('font-size', '12px')
     .text(d => d.icon);
 
-  // Label
   node.append('text')
     .attr('class', 'node-label')
     .attr('dy', d => d.r + 14)
@@ -299,14 +254,12 @@ function renderGraph() {
     .style('fill', 'rgba(240,240,255,0.7)')
     .text(d => truncate(d.title, 18));
 
-  // Tick
   simulation.on('tick', () => {
     link
       .attr('x1', d => d.source.x)
       .attr('y1', d => d.source.y)
       .attr('x2', d => d.target.x)
       .attr('y2', d => d.target.y);
-
     node.attr('transform', d => `translate(${d.x},${d.y})`);
   });
 }
@@ -440,18 +393,16 @@ async function runAICluster() {
       tags: n.tags,
     }));
 
-    const res = await fetch('/api/ai/analyze-connections', {
+    const data = await smartFetch('/api/ai/analyze-connections', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ideas }),
     });
-    const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
     clusterData = data.analysis;
     result.innerHTML = renderClusterResult(clusterData);
 
-    // Cluster filter buttons
     if (clusterData.clusters?.length) {
       controls.innerHTML = clusterData.clusters.map((c, i) => {
         const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
@@ -472,9 +423,7 @@ async function runAICluster() {
 
 function renderClusterResult(analysis) {
   let html = '';
-  if (analysis.insights) {
-    html += `<p style="margin-bottom:12px;">${analysis.insights}</p>`;
-  }
+  if (analysis.insights) html += `<p style="margin-bottom:12px;">${analysis.insights}</p>`;
   if (analysis.networkScore !== undefined) {
     const score = analysis.networkScore;
     const color = score >= 8 ? 'var(--accent-emerald)' : score >= 6 ? 'var(--accent-gold)' : 'var(--accent-rose)';
@@ -484,12 +433,9 @@ function renderClusterResult(analysis) {
 }
 
 function applyAIConnections(connections) {
-  // Add AI-discovered connections as dashed lines
   if (!connections.length || !allNodes.length) return;
 
-  const nodeMap = new Map(allNodes.map(n => [n.title, n]));
   const extraLinks = [];
-
   connections.forEach(conn => {
     const srcNode = allNodes[conn.from - 1];
     const tgtNode = allNodes[conn.to - 1];
@@ -590,7 +536,6 @@ function showToast(message, type = 'info') {
   setTimeout(() => toast.remove(), 4000);
 }
 
-// Resize handler
 window.addEventListener('resize', () => {
   const container = document.getElementById('map-container');
   svg.attr('width', container.offsetWidth).attr('height', container.offsetHeight);

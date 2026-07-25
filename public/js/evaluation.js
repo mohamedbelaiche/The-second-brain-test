@@ -6,28 +6,6 @@ let allIdeas = [];
 let radarChart = null;
 
 // ----------------------------------------
-// LOCALSTORAGE SETTINGS HELPERS
-// ----------------------------------------
-
-function getLocalSettings() {
-  try {
-    const raw = localStorage.getItem('brain_settings');
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
-}
-
-function getSettingsHeaders() {
-  const s = getLocalSettings();
-  const headers = {};
-  if (s.notionApiKey) headers['X-Notion-Api-Key'] = s.notionApiKey;
-  if (s.notionDatabaseId) headers['X-Notion-Database-Id'] = s.notionDatabaseId;
-  if (s.aiApiKey) headers['X-Ai-Api-Key'] = s.aiApiKey;
-  if (s.aiApiUrl) headers['X-Ai-Api-Url'] = s.aiApiUrl;
-  if (s.aiModel) headers['X-Ai-Model'] = s.aiModel;
-  return headers;
-}
-
-// ----------------------------------------
 // INIT
 // ----------------------------------------
 
@@ -41,8 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadData() {
   try {
-    const res = await fetch('/api/ideas', { headers: getSettingsHeaders() });
-    const data = await res.json();
+    const data = await smartFetch('/api/ideas');
     if (!data.success) throw new Error(data.error);
     
     allIdeas = data.ideas;
@@ -69,7 +46,6 @@ async function runEvaluation() {
     }
   }
 
-  // Show loading state
   const hero = document.getElementById('eval-hero');
   document.querySelector('#eval-hero > div').innerHTML = `
     <div id="loading-hero" style="padding:20px;">
@@ -92,12 +68,11 @@ async function runEvaluation() {
       lastUpdated,
     };
 
-    const res = await fetch('/api/ai/evaluate', {
+    const data = await smartFetch('/api/ai/evaluate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ideas: allIdeas, stats }),
     });
-    const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
     renderEvaluation(data.evaluation);
@@ -115,7 +90,6 @@ async function runEvaluation() {
 // ----------------------------------------
 
 function renderEvaluation(ev) {
-  // Score Ring
   const score = ev.overallScore || 0;
   document.querySelector('#eval-hero > div').innerHTML = `
     <div class="score-ring" style="display:inline-block;">
@@ -140,7 +114,6 @@ function renderEvaluation(ev) {
     </div>
     <div style="margin-top:16px;" id="score-pills"></div>`;
 
-  // Animate the ring
   setTimeout(() => {
     const arc = document.getElementById('score-arc');
     if (arc) {
@@ -151,17 +124,13 @@ function renderEvaluation(ev) {
     }
   }, 100);
 
-  // Score pills
   const pillsContainer = document.getElementById('score-pills');
   if (pillsContainer && ev.dimensions) {
     const dims = ev.dimensions;
     pillsContainer.innerHTML = Object.entries(dims).map(([key, val]) => {
       const labels = {
-        diversity: 'التنوع',
-        depth: 'العمق',
-        connections: 'الروابط',
-        actionability: 'التطبيق',
-        freshness: 'الحداثة'
+        diversity: 'التنوع', depth: 'العمق', connections: 'الروابط',
+        actionability: 'التطبيق', freshness: 'الحداثة'
       };
       const color = val.score >= 8 ? 'var(--accent-emerald)' : val.score >= 6 ? 'var(--accent-gold)' : 'var(--accent-rose)';
       return `<span class="metric-pill" style="color:${color};border-color:${color}55;background:${color}15;">
@@ -170,13 +139,11 @@ function renderEvaluation(ev) {
     }).join('');
   }
 
-  // Dimensions bars
   if (ev.dimensions) {
     renderDimensions(ev.dimensions);
     renderRadarChart(ev.dimensions);
   }
 
-  // Strengths
   if (ev.strengths?.length) {
     document.getElementById('strengths-section').innerHTML =
       ev.strengths.map(s => `
@@ -186,7 +153,6 @@ function renderEvaluation(ev) {
         </div>`).join('');
   }
 
-  // Weaknesses
   if (ev.weaknesses?.length) {
     document.getElementById('weaknesses-section').innerHTML =
       ev.weaknesses.map(w => `
@@ -196,7 +162,6 @@ function renderEvaluation(ev) {
         </div>`).join('');
   }
 
-  // Recommendations
   if (ev.recommendations?.length) {
     document.getElementById('recommendations-section').innerHTML =
       ev.recommendations.map(rec => {
@@ -212,7 +177,6 @@ function renderEvaluation(ev) {
       }).join('');
   }
 
-  // Summary
   if (ev.summary) {
     document.getElementById('summary-section').innerHTML = `
       <div class="summary-box">${ev.summary}</div>`;
@@ -249,7 +213,6 @@ function renderDimensions(dims) {
         </div>`;
     }).join('');
 
-  // Animate bars
   setTimeout(() => {
     document.querySelectorAll('.progress-fill').forEach(bar => {
       const target = bar.dataset.target;
@@ -342,29 +305,17 @@ function renderRadarChart(dims) {
       },
       scales: {
         r: {
-          min: 0,
-          max: 10,
-          ticks: {
-            display: false,
-            stepSize: 2,
-          },
-          grid: {
-            color: 'rgba(100,65,230,0.15)',
-            circular: true,
-          },
-          angleLines: {
-            color: 'rgba(100,65,230,0.2)',
-          },
+          min: 0, max: 10,
+          ticks: { display: false, stepSize: 2 },
+          grid: { color: 'rgba(100,65,230,0.15)', circular: true },
+          angleLines: { color: 'rgba(100,65,230,0.2)' },
           pointLabels: {
             color: 'rgba(153,153,187,0.9)',
             font: { family: 'Cairo', size: 12, weight: '600' },
           },
         },
       },
-      animation: {
-        duration: 1200,
-        easing: 'easeInOutQuart',
-      },
+      animation: { duration: 1200, easing: 'easeInOutQuart' },
     },
   });
 }
@@ -394,12 +345,11 @@ async function getSuggestions() {
     </div>`;
 
   try {
-    const res = await fetch('/api/ai/suggest', {
+    const data = await smartFetch('/api/ai/suggest', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ideas: allIdeas, count: 6 }),
     });
-    const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
     const suggestions = data.suggestions?.suggestions || data.suggestions || [];
@@ -450,12 +400,11 @@ async function getSuggestions() {
 async function addToNotion(title, description, category) {
   try {
     showToast('⏳ جارٍ الإضافة إلى Notion...', 'info');
-    const res = await fetch('/api/ideas', {
+    const data = await smartFetch('/api/ideas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, content: description, category: category || 'AI مقترح' }),
     });
-    const data = await res.json();
     if (!data.success) throw new Error(data.error);
     showToast('✅ تمت الإضافة إلى Notion!', 'success');
     allIdeas = [...allIdeas, data.idea];

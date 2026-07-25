@@ -7,32 +7,6 @@ let currentEditId = null;
 let dbCategories = [];
 
 // ----------------------------------------
-// LOCALSTORAGE SETTINGS HELPERS
-// ----------------------------------------
-
-function getLocalSettings() {
-  try {
-    const raw = localStorage.getItem('brain_settings');
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
-}
-
-function saveLocalSettings(settings) {
-  localStorage.setItem('brain_settings', JSON.stringify(settings));
-}
-
-function getSettingsHeaders() {
-  const s = getLocalSettings();
-  const headers = {};
-  if (s.notionApiKey) headers['X-Notion-Api-Key'] = s.notionApiKey;
-  if (s.notionDatabaseId) headers['X-Notion-Database-Id'] = s.notionDatabaseId;
-  if (s.aiApiKey) headers['X-Ai-Api-Key'] = s.aiApiKey;
-  if (s.aiApiUrl) headers['X-Ai-Api-Url'] = s.aiApiUrl;
-  if (s.aiModel) headers['X-Ai-Model'] = s.aiModel;
-  return headers;
-}
-
-// ----------------------------------------
 // INIT
 // ----------------------------------------
 
@@ -43,8 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadSchema() {
   try {
-    const res = await fetch('/api/schema', { headers: getSettingsHeaders() });
-    const data = await res.json();
+    const data = await smartFetch('/api/schema');
     if (data.success && data.schema['الفئة']?.select?.options) {
       dbCategories = data.schema['الفئة'].select.options.map(o => o.name);
       
@@ -70,8 +43,7 @@ async function loadIdeas() {
     </div>`;
 
   try {
-    const response = await fetch('/api/ideas', { headers: getSettingsHeaders() });
-    const data = await response.json();
+    const data = await smartFetch('/api/ideas');
 
     if (!data.success) throw new Error(data.error || 'خطأ في التحميل');
 
@@ -88,7 +60,7 @@ async function loadIdeas() {
         <span class="empty-icon">⚠️</span>
         <div class="empty-title">تعذّر الاتصال بـ Notion</div>
         <div class="empty-desc" style="color:var(--accent-rose);">${err.message}</div>
-        <div class="empty-desc" style="margin-top:12px;">تأكد من أن الخادم يعمل وأن API Key صحيح</div>
+        <div class="empty-desc" style="margin-top:12px;">تأكد من صحة API Key و Database ID في الإعدادات</div>
         <button class="btn btn-secondary" style="margin-top:16px;" onclick="loadIdeas()">🔄 إعادة المحاولة</button>
       </div>`;
     updateConnectionStatus(false);
@@ -264,12 +236,11 @@ async function addIdea() {
 
   try {
     showToast('⏳ جارٍ الحفظ في Notion...', 'info');
-    const res = await fetch('/api/ideas', {
+    const data = await smartFetch('/api/ideas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
     closeModal('add-modal');
@@ -329,16 +300,15 @@ async function saveEdit() {
   const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
 
   try {
-    const res = await fetch(`/api/ideas/${currentEditId}`, {
+    const data = await smartFetch(`/api/ideas/${currentEditId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title,
         category: document.getElementById('edit-category').value.trim(),
         tags,
       }),
     });
-    const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
     closeModal('edit-modal');
@@ -353,8 +323,7 @@ async function deleteIdea(id) {
   if (!confirm('هل تريد حذف هذه الفكرة؟ (سيتم أرشفتها في Notion)')) return;
 
   try {
-    const res = await fetch(`/api/ideas/${id}`, { method: 'DELETE', headers: getSettingsHeaders() });
-    const data = await res.json();
+    const data = await smartFetch(`/api/ideas/${id}`, { method: 'DELETE' });
     if (!data.success) throw new Error(data.error);
 
     closeModal('edit-modal');
@@ -392,19 +361,17 @@ async function triggerAIAnalysis() {
   actions.style.display = 'none';
 
   try {
-    const res = await fetch('/api/ai/analyze-connections', {
+    const data = await smartFetch('/api/ai/analyze-connections', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ideas: allIdeas }),
     });
-    const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
     const analysis = data.analysis;
     result.className = 'ai-result';
     result.innerHTML = formatAIResult(analysis);
 
-    // Add new ideas buttons
     if (analysis.newIdeas?.length) {
       actions.style.display = 'flex';
       actions.innerHTML = analysis.newIdeas.map(idea => `
@@ -452,12 +419,11 @@ async function addSuggestedIdea(title, rationale) {
   if (!confirm(`إضافة الفكرة: "${title}"؟`)) return;
 
   try {
-    const res = await fetch('/api/ideas', {
+    const data = await smartFetch('/api/ideas', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSettingsHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, content: rationale, category: 'AI مقترح' }),
     });
-    const data = await res.json();
     if (!data.success) throw new Error(data.error);
     showToast('✅ تمت إضافة الفكرة المقترحة!', 'success');
     await loadIdeas();
@@ -471,11 +437,8 @@ async function addSuggestedIdea(title, rationale) {
 // ----------------------------------------
 
 function updateConnectionStatus(connected) {
-  // Always fetch real status from the backend to update both Notion and AI indicators
-  fetch('/api/status', { headers: getSettingsHeaders() })
-    .then(res => res.json())
+  smartFetch('/api/status')
     .then(data => {
-      // Notion
       const notionDot = document.getElementById('notion-status-dot');
       const notionText = document.getElementById('notion-status-text');
       if (data.notion && connected !== false) {
@@ -486,7 +449,6 @@ function updateConnectionStatus(connected) {
         notionText.textContent = 'Notion: غير متصل';
       }
 
-      // AI
       const aiDot = document.getElementById('ai-status-dot');
       const aiText = document.getElementById('ai-status-text');
       if (aiDot && aiText) {
@@ -516,14 +478,12 @@ function closeModal(id) {
   document.body.style.overflow = '';
 }
 
-// Close on backdrop click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) closeModal(overlay.id);
   });
 });
 
-// Close on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay.active').forEach(m => closeModal(m.id));
@@ -552,30 +512,19 @@ async function openSettingsModal() {
   const statusEl = document.getElementById('settings-status');
   statusEl.style.display = 'none';
 
-  const local = getLocalSettings();
-
   try {
-    const res = await fetch('/api/settings', { headers: getSettingsHeaders() });
-    if (!res.ok) throw new Error('Server returned ' + res.status);
-    const text = await res.text();
-    const data = JSON.parse(text);
+    const data = await smartFetch('/api/settings');
     if (data.success && data.settings) {
-      document.getElementById('settings-notion-key').value = data.settings.notionApiKey || local.notionApiKey || '';
-      document.getElementById('settings-database-id').value = data.settings.notionDatabaseId || local.notionDatabaseId || '';
-      document.getElementById('settings-ai-key').value = data.settings.aiApiKey || local.aiApiKey || '';
-      document.getElementById('settings-ai-url').value = data.settings.aiApiUrl || local.aiApiUrl || '';
-      document.getElementById('settings-ai-model').value = data.settings.aiModel || local.aiModel || '';
-      return;
+      const s = data.settings;
+      document.getElementById('settings-notion-key').value = s.notionApiKey || '';
+      document.getElementById('settings-database-id').value = s.notionDatabaseId || '';
+      document.getElementById('settings-ai-key').value = s.aiApiKey || '';
+      document.getElementById('settings-ai-url').value = s.aiApiUrl || '';
+      document.getElementById('settings-ai-model').value = s.aiModel || '';
     }
   } catch(e) {
-    console.warn('Server settings load failed, using localStorage:', e);
+    console.warn('Failed to load settings:', e);
   }
-
-  document.getElementById('settings-notion-key').value = local.notionApiKey || '';
-  document.getElementById('settings-database-id').value = local.notionDatabaseId || '';
-  document.getElementById('settings-ai-key').value = local.aiApiKey || '';
-  document.getElementById('settings-ai-url').value = local.aiApiUrl || '';
-  document.getElementById('settings-ai-model').value = local.aiModel || '';
 }
 
 async function saveSettings() {
@@ -599,25 +548,16 @@ async function saveSettings() {
     aiModel: document.getElementById('settings-ai-model').value.trim(),
   };
 
-  // Always save to localStorage first (works on any hosting)
   saveLocalSettings(settings);
 
-  // Try to save to server as well
   let serverOk = false;
   try {
-    const res = await fetch('/api/settings', {
+    const data = await smartFetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings),
     });
-    const text = await res.text();
-    try {
-      const data = JSON.parse(text);
-      serverOk = data.success === true;
-    } catch {
-      // Server returned HTML (hosting issue) — localStorage is enough
-      console.warn('Server returned non-JSON response, using localStorage only');
-    }
+    serverOk = data.success === true;
   } catch(e) {
     console.warn('Server save failed, using localStorage:', e.message);
   }
@@ -625,11 +565,9 @@ async function saveSettings() {
   statusEl.style.display = 'block';
   statusEl.style.background = 'rgba(16,185,129,0.1)';
   statusEl.style.color = 'var(--accent-emerald)';
-  if (serverOk) {
-    statusEl.textContent = '✅ تم حفظ الإعدادات بنجاح!';
-  } else {
-    statusEl.textContent = '✅ تم حفظ الإعدادات في المتصفح! (localStorage)';
-  }
+  statusEl.textContent = serverOk
+    ? '✅ تم حفظ الإعدادات بنجاح!'
+    : '✅ تم حفظ الإعدادات في المتصفح!';
   setTimeout(() => {
     closeModal('settings-modal');
     location.reload();
