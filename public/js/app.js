@@ -528,7 +528,9 @@ async function openSettingsModal() {
 
   try {
     const res = await fetch('/api/settings');
-    const data = await res.json();
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    const text = await res.text();
+    const data = JSON.parse(text);
     if (data.success && data.settings) {
       document.getElementById('settings-notion-key').value = data.settings.notionApiKey || '';
       document.getElementById('settings-database-id').value = data.settings.notionDatabaseId || '';
@@ -566,7 +568,9 @@ async function saveSettings() {
         aiModel: document.getElementById('settings-ai-model').value.trim(),
       }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error('الخادم لا يدعم هذا الطلب. تأكد من تشغيل الخادم بالكود الأخير.'); }
     if (data.success) {
       statusEl.style.display = 'block';
       statusEl.style.background = 'rgba(16,185,129,0.1)';
