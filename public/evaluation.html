@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>العقل الثاني - تقييم الأداء</title>
+  <meta name="description" content="تقرير شامل لتقييم جودة وأداء قاعدة المعرفة">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+  <style>
+    .eval-hero {
+      background: linear-gradient(135deg, rgba(100,65,230,0.15), rgba(6,182,212,0.08));
+      border: 1px solid var(--border-active);
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      margin-bottom: 28px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .eval-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(100,65,230,0.04) 90deg, transparent 180deg);
+      animation: rotate 20s linear infinite;
+    }
+    
+    .strength-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.2);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .strength-icon { color: var(--accent-emerald); font-size: 1.1rem; }
+    
+    .weakness-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      background: rgba(244,63,94,0.06);
+      border: 1px solid rgba(244,63,94,0.2);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .weakness-icon { color: var(--accent-rose); font-size: 1.1rem; }
+    
+    .chart-container {
+      position: relative;
+      height: 220px;
+      margin-top: 8px;
+    }
+
+    .radar-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .summary-box {
+      background: rgba(100,65,230,0.08);
+      border: 1px solid var(--border-active);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 2;
+    }
+
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(100,65,230,0.15);
+      border: 1px solid var(--border-active);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent-violet);
+      margin: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="toast-container" id="toast-container"></div>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🧠</div>
+      <div class="logo-title">العقل الثاني</div>
+      <div class="logo-subtitle">Second Brain Dashboard</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">الرئيسية</div>
+      <a href="/" class="nav-item">
+        <span class="nav-icon">📊</span> لوحة التحكم
+      </a>
+      <a href="/map" class="nav-item">
+        <span class="nav-icon">🗺️</span> خريطة الأفكار
+      </a>
+      <a href="/evaluation" class="nav-item active">
+        <span class="nav-icon">📈</span> تقييم الأداء
+      </a>
+      <div class="nav-section-title" style="margin-top:16px;">التقييم</div>
+      <a href="#" class="nav-item" onclick="runEvaluation(); return false;">
+        <span class="nav-icon">🚀</span> تشغيل التقييم
+      </a>
+      <a href="#" class="nav-item" onclick="getSuggestions(); return false;">
+        <span class="nav-icon">💡</span> اقتراحات AI
+      </a>
+    </nav>
+    <div class="sidebar-status">
+      <div class="status-item">
+        <div class="status-dot" id="notion-dot"></div>
+        <span id="notion-text">Notion: جارٍ التحقق...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">📈 تقييم أداء قاعدة المعرفة</div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadData()">🔄 تحديث البيانات</button>
+        <button class="btn btn-secondary btn-sm" onclick="getSuggestions()">💡 اقتراحات</button>
+        <button class="btn btn-primary btn-sm" onclick="runEvaluation()">
+          🚀 تشغيل التقييم الكامل
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      
+      <!-- HERO SCORE -->
+      <div class="eval-hero" id="eval-hero">
+        <div style="position:relative;z-index:1;">
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;">
+            يحتاج التقييم الكامل إلى تحليل AI — اضغط على "تشغيل التقييم الكامل"
+          </div>
+          <div class="score-ring" id="score-ring" style="display:none;">
+            <svg viewBox="0 0 120 120" width="160" height="160">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(100,65,230,0.15)" stroke-width="10"/>
+              <circle id="score-arc" cx="60" cy="60" r="50" fill="none"
+                stroke="url(#evalGrad)" stroke-width="10"
+                stroke-linecap="round"
+                stroke-dasharray="314"
+                stroke-dashoffset="314"/>
+              <defs>
+                <linearGradient id="evalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#6441e6"/>
+                  <stop offset="100%" stop-color="#06b6d4"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="score-ring-value">
+              <span id="overall-score">—</span>
+              <span class="score-ring-label">/ 10</span>
+            </div>
+          </div>
+          <div id="loading-hero" style="display:none;">
+            <div class="spinner" style="margin:0 auto 16px;"></div>
+            <div style="color:var(--text-muted);">Big Pickle يحلل قاعدة المعرفة...</div>
+          </div>
+          <div id="score-pills" style="margin-top:16px;"></div>
+        </div>
+      </div>
+
+      <!-- GRID -->
+      <div class="grid-2" style="margin-bottom:28px;">
+        
+        <!-- DIMENSIONS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎯 أبعاد التقييم</div>
+          </div>
+          <div id="dimensions-section">
+            <div class="empty-state" style="padding:40px;">
+              <span class="empty-icon">📊</span>
+              <div class="empty-title">شغّل التقييم لرؤية النتائج</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RADAR CHART -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🕸️ المخطط الراداري</div>
+          </div>
+          <div class="radar-container">
+            <canvas id="radar-chart" width="260" height="260"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- STRENGTHS & WEAKNESSES -->
+      <div class="grid-2" style="margin-bottom:28px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">✅ نقاط القوة</div>
+          </div>
+          <div id="strengths-section">
+            <div style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:20px;">
+              في انتظار نتائج التقييم...
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⚠️ نقاط التحسين</div>
+          </div>
+          <div id="weaknesses-section">
+            <div style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:20px;">
+              في انتظار نتائج التقييم...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECOMMENDATIONS -->
+      <div class="card" style="margin-bottom:28px;">
+        <div class="card-header">
+          <div class="card-title">🎯 التوصيات والخطوات التالية</div>
+          <button class="btn btn-ghost btn-sm" onclick="runEvaluation()">تحديث</button>
+        </div>
+        <div id="recommendations-section">
+          <div style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:30px;">
+            شغّل التقييم الكامل لرؤية التوصيات المخصصة
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="card" style="margin-bottom:28px;" id="summary-card" style="display:none;">
+        <div class="card-header">
+          <div class="card-title">📝 الملخص التحليلي</div>
+        </div>
+        <div id="summary-section">
+          <div style="color:var(--text-muted);text-align:center;padding:20px;">
+            في انتظار التحليل...
+          </div>
+        </div>
+      </div>
+
+      <!-- AI SUGGESTIONS PANEL -->
+      <div class="card" id="suggestions-panel" style="display:none;">
+        <div class="card-header">
+          <div class="card-title">💡 أفكار مقترحة بالذكاء الاصطناعي</div>
+        </div>
+        <div id="suggestions-grid" class="ideas-grid"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/js/evaluation.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>العقل الثاني - لوحة التحكم</title>
+  <meta name="description" content="لوحة تحكم متكاملة لإدارة قاعدة الأفكار والمعرفة باستخدام Notion والذكاء الاصطناعي">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+
+<div class="toast-container" id="toast-container"></div>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🧠</div>
+      <div class="logo-title">العقل الثاني</div>
+      <div class="logo-subtitle">Second Brain Dashboard</div>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">الرئيسية</div>
+      <a href="/" class="nav-item active" id="nav-dashboard">
+        <span class="nav-icon">📊</span>
+        لوحة التحكم
+      </a>
+      <a href="/map" class="nav-item" id="nav-map">
+        <span class="nav-icon">🗺️</span>
+        خريطة الأفكار
+      </a>
+      <a href="/evaluation" class="nav-item" id="nav-eval">
+        <span class="nav-icon">📈</span>
+        تقييم الأداء
+      </a>
+      
+      <div class="nav-section-title" style="margin-top:16px;">الأدوات</div>
+      <a href="#" class="nav-item" onclick="openAddModal(); return false;">
+        <span class="nav-icon">✨</span>
+        فكرة جديدة
+      </a>
+      <a href="#" class="nav-item" onclick="triggerAIAnalysis(); return false;">
+        <span class="nav-icon">🤖</span>
+        تحليل AI
+      </a>
+    </nav>
+    
+    <div class="sidebar-status">
+      <div class="status-item">
+        <div class="status-dot" id="notion-status-dot"></div>
+        <span id="notion-status-text">جارٍ التحقق من Notion...</span>
+      </div>
+      <div class="status-item">
+        <div class="status-dot offline" id="ai-status-dot"></div>
+        <span id="ai-status-text">AI: غير متصل</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-title">📊 لوحة التحكم الرئيسية</div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadIdeas()" id="refresh-btn">
+          <span>🔄</span> تحديث
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="triggerAIAnalysis()">
+          <span>🤖</span> تحليل AI
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()">
+          <span>✨</span> فكرة جديدة
+        </button>
+      </div>
+    </header>
+
+    <!-- STATS -->
+    <div class="stats-grid fade-in" id="stats-section">
+      <div class="stat-card purple stagger-1 fade-in">
+        <span class="stat-icon">💡</span>
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-label">إجمالي الأفكار</div>
+      </div>
+      <div class="stat-card cyan stagger-2 fade-in">
+        <span class="stat-icon">🗂️</span>
+        <div class="stat-value" id="stat-categories">—</div>
+        <div class="stat-label">الفئات</div>
+      </div>
+      <div class="stat-card gold stagger-3 fade-in">
+        <span class="stat-icon">🏷️</span>
+        <div class="stat-value" id="stat-tags">—</div>
+        <div class="stat-label">الوسوم</div>
+      </div>
+      <div class="stat-card emerald stagger-4 fade-in">
+        <span class="stat-icon">🕐</span>
+        <div class="stat-value" id="stat-today">—</div>
+        <div class="stat-label">تحديثات اليوم</div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content-area">
+
+      <!-- AI PANEL -->
+      <div class="ai-panel fade-in" id="ai-panel" style="display:none;">
+        <div class="ai-header">
+          <span class="ai-icon">🤖</span>
+          <div>
+            <div class="ai-title">تحليل الذكاء الاصطناعي</div>
+            <div class="ai-subtitle">Big Pickle Model - OpenCode Zen</div>
+          </div>
+        </div>
+        <div class="ai-result" id="ai-result">
+          <div class="loading-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="ai-actions" id="ai-actions" style="display:none;"></div>
+      </div>
+
+      <!-- IDEAS SECTION -->
+      <div class="section-header">
+        <h1 class="section-title">💡 قاعدة الأفكار</h1>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="ideas-count" class="badge">0</span>
+          <span style="font-size:0.8rem;color:var(--text-muted);">فكرة</span>
+        </div>
+      </div>
+
+      <!-- SEARCH & FILTER -->
+      <div class="search-bar">
+        <input 
+          type="text" 
+          id="search-input" 
+          class="search-input" 
+          placeholder="🔍 ابحث في أفكارك..."
+          oninput="filterIdeas()"
+        >
+        <select class="filter-select" id="category-filter" onchange="filterIdeas()">
+          <option value="">كل الفئات</option>
+        </select>
+        <select class="filter-select" id="sort-select" onchange="filterIdeas()">
+          <option value="newest">الأحدث</option>
+          <option value="oldest">الأقدم</option>
+          <option value="az">أ - ي</option>
+        </select>
+      </div>
+
+      <!-- IDEAS GRID -->
+      <div class="ideas-grid" id="ideas-grid">
+        <div class="empty-state" id="loading-state">
+          <div class="spinner" style="margin:0 auto 20px;"></div>
+          <div class="empty-title">جارٍ تحميل الأفكار...</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ADD IDEA MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✨ إضافة فكرة جديدة</div>
+      <button class="modal-close" onclick="closeModal('add-modal')">✕</button>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">عنوان الفكرة *</label>
+      <input type="text" id="new-title" class="form-input" placeholder="ما هي الفكرة؟">
+    </div>
+    <div class="form-group">
+      <label class="form-label">الوصف / التفاصيل</label>
+      <textarea id="new-content" class="form-textarea" placeholder="اشرح الفكرة بالتفصيل..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الفئة</label>
+      <select id="new-category" class="form-select">
+        <option value="">بدون فئة</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الوسوم (مفصولة بفاصلة)</label>
+      <input type="text" id="new-tags" class="form-input" placeholder="مثال: AI، مستقبل، تطوير">
+    </div>
+    
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;">
+      <button class="btn btn-ghost" onclick="closeModal('add-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="addIdea()">
+        <span>✨</span> حفظ الفكرة
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT IDEA MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✏️ تعديل الفكرة</div>
+      <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
+    </div>
+    
+    <div id="edit-modal-content"></div>
+    
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;">
+      <button class="btn btn-danger btn-sm" onclick="deleteIdea(currentEditId)">🗑️ حذف</button>
+      <button class="btn btn-ghost" onclick="closeModal('edit-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveEdit()">
+        <span>💾</span> حفظ التعديلات
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

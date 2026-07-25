@@ -1,0 +1,339 @@
+{
+  "success": true,
+  "schema": {
+    "المصدر": {
+      "id": "%3Dt%3AT",
+      "name": "المصدر",
+      "description": null,
+      "type": "url",
+      "url": {}
+    },
+    "الوسوم": {
+      "id": "%3Es%7Bv",
+      "name": "الوسوم",
+      "description": null,
+      "type": "multi_select",
+      "multi_select": {
+        "options": [
+          {
+            "id": "86023417-6db5-48d1-9eea-de4bc10ab0c3",
+            "name": "تطوير ويب",
+            "color": "pink",
+            "description": null
+          },
+          {
+            "id": "30fe4cf5-84c0-46ba-8fff-eead9edaa28e",
+            "name": "UI/UX",
+            "color": "yellow",
+            "description": null
+          },
+          {
+            "id": "c9dd0895-865d-4875-9202-cee39688cf08",
+            "name": "برمجة",
+            "color": "gray",
+            "description": null
+          },
+          {
+            "id": "8d1fd417-ef8e-4ec6-9683-d2bc623ca2f5",
+            "name": "Python",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "ac7e7ca1-552f-45be-8aab-f22bc8675c56",
+            "name": "توفير",
+            "color": "brown",
+            "description": null
+          },
+          {
+            "id": "c62624bd-0b8b-41ab-9797-65e3e0fa2372",
+            "name": "استثمار",
+            "color": "red",
+            "description": null
+          },
+          {
+            "id": "c625b256-6317-4f80-8a99-7e9c627193c0",
+            "name": "رياضة",
+            "color": "blue",
+            "description": null
+          },
+          {
+            "id": "d35b4887-ce1c-4830-980d-d559754ad065",
+            "name": "تغذية",
+            "color": "green",
+            "description": null
+          },
+          {
+            "id": "763a15b4-b63e-45dd-abf5-24d0292aa4e2",
+            "name": "نوم",
+            "color": "orange",
+            "description": null
+          },
+          {
+            "id": "1436c468-6efa-45d6-97ed-785e47ac1065",
+            "name": "كتب",
+            "color": "purple",
+            "description": null
+          },
+          {
+            "id": "c3d44dd1-14bf-486e-92c8-870aa4481555",
+            "name": "إدارة",
+            "color": "orange",
+            "description": null
+          },
+          {
+            "id": "36726930-ae43-48ab-9bbe-010cdc365ec9",
+            "name": "AI",
+            "color": "brown",
+            "description": null
+          },
+          {
+            "id": "e58c1453-9900-4ec2-ac81-e1aaca24b9fd",
+            "name": "أدوات",
+            "color": "default",
+            "description": null
+          },
+          {
+            "id": "2dd59acf-ee5d-4eb9-b8c4-1facb6bc757c",
+            "name": "تطبيق جوال",
+            "color": "orange",
+            "description": null
+          },
+          {
+            "id": "7110565e-393e-4bdf-b755-9c7ce485b94a",
+            "name": "React Native",
+            "color": "purple",
+            "description": null
+          },
+          {
+            "id": "a85d9f1e-f2e1-434b-9ce9-1415c7cf6036",
+            "name": "تسويق",
+            "color": "brown",
+            "description": null
+          },
+          {
+            "id": "4c10a0a5-ac4f-416e-aebe-6f5923148bc8",
+            "name": "دورة",
+            "color": "red",
+            "description": null
+          }
+        ]
+      }
+    },
+    "الحالة": {
+      "id": "Jnd%3E",
+      "name": "الحالة",
+      "description": null,
+      "type": "select",
+      "select": {
+        "options": [
+          {
+            "id": "19508cd3-e3ea-4364-befd-1904985eaa99",
+            "name": "نشط",
+            "color": "green",
+            "description": null
+          },
+          {
+            "id": "da6c4020-c3c2-4e25-b11b-fd4519c6fb8f",
+            "name": "معلق",
+            "color": "yellow",
+            "description": null
+          },
+          {
+            "id": "0cae3bce-57f1-4af1-bf45-c62912ce8b66",
+            "name": "مكتمل",
+            "color": "blue",
+            "description": null
+          },
+          {
+            "id": "e0472f46-2339-458f-a223-0b7bd63c0ad9",
+            "name": "ملغي",
+            "color": "red",
+            "description": null
+          }
+        ]
+      }
+    },
+    "الملاحظات": {
+      "id": "StAI",
+      "name": "الملاحظات",
+      "description": null,
+      "type": "rich_text",
+      "rich_text": {}
+    },
+    "تاريخ النهاية": {
+      "id": "YhH%3E",
+      "name": "تاريخ النهاية",
+      "description": null,
+      "type": "date",
+      "date": {}
+    },
+    "الأولوية": {
+      "id": "%5DX%5BE",
+      "name": "الأولوية",
+      "description": null,
+      "type": "select",
+      "select": {
+        "options": [
+          {
+            "id": "46aa6352-06bc-41f4-aeec-e5ada7bdd452",
+            "name": "عالية",
+            "color": "red",
+            "description": null
+          },
+          {
+            "id": "4a26eb3c-a512-44cb-99c3-9b4baf1d53b7",
+            "name": "متوسطة",
+            "color": "yellow",
+            "description": null
+          },
+          {
+            "id": "04a96836-6d21-458b-9009-4f788ec83ea2",
+            "name": "منخفضة",
+            "color": "green",
+            "description": null
+          }
+        ]
+      }
+    },
+    "مفضل": {
+      "id": "%60Y_G",
+      "name": "مفضل",
+      "description": null,
+      "type": "checkbox",
+      "checkbox": {}
+    },
+    "تاريخ البداية": {
+      "id": "lKGA",
+      "name": "تاريخ البداية",
+      "description": null,
+      "type": "date",
+      "date": {}
+    },
+    "الفئة": {
+      "id": "niXx",
+      "name": "الفئة",
+      "description": null,
+      "type": "select",
+      "select": {
+        "options": [
+          {
+            "id": "e3cafcb0-1d3c-40d2-91db-d2b885a13fd8",
+            "name": "تطوير شخصي",
+            "color": "purple",
+            "description": null
+          },
+          {
+            "id": "c1964caf-1094-4208-8dfb-f938bd0e7811",
+            "name": "عمل",
+            "color": "blue",
+            "description": null
+          },
+          {
+            "id": "7e54860d-5298-476d-9839-88dee55c04d0",
+            "name": "صحة",
+            "color": "green",
+            "description": null
+          },
+          {
+            "id": "a4eb59e6-ac6f-4f66-9138-073294aac233",
+            "name": "مال",
+            "color": "yellow",
+            "description": null
+          },
+          {
+            "id": "33d0555d-0193-4732-bdd6-98bdca86c6c6",
+            "name": "تعليم",
+            "color": "orange",
+            "description": null
+          },
+          {
+            "id": "ce536bb3-0ad2-45ea-abed-b32bfba8f669",
+            "name": "علاقات",
+            "color": "pink",
+            "description": null
+          },
+          {
+            "id": "dfc21da9-c20f-4d83-a3dd-cd5fd198e1d4",
+            "name": "إبداع",
+            "color": "purple",
+            "description": null
+          },
+          {
+            "id": "18cb4a21-c0ad-487f-97a8-5feaf9779382",
+            "name": "تقنية",
+            "color": "gray",
+            "description": null
+          }
+        ]
+      }
+    },
+    "التاريخ": {
+      "id": "%7C_Oq",
+      "name": "التاريخ",
+      "description": null,
+      "type": "date",
+      "date": {}
+    },
+    "النوع (PARA)": {
+      "id": "~Ppx",
+      "name": "النوع (PARA)",
+      "description": null,
+      "type": "select",
+      "select": {
+        "options": [
+          {
+            "id": "f0348e8c-63ad-4207-885a-8124f896ea03",
+            "name": "مشاريع (Projects)",
+            "color": "blue",
+            "description": null
+          },
+          {
+            "id": "858e14cd-65a3-4c16-ae39-4721afbe76a1",
+            "name": "مجالات (Areas)",
+            "color": "green",
+            "description": null
+          },
+          {
+            "id": "7b6a9fc4-52d6-4d95-ab33-52a3e4219007",
+            "name": "موارد (Resources)",
+            "color": "yellow",
+            "description": null
+          },
+          {
+            "id": "33d8558c-5a13-4c2a-9f47-bdf2f1e74f68",
+            "name": "أرشيف (Archive)",
+            "color": "gray",
+            "description": null
+          }
+        ]
+      }
+    },
+    "Name": {
+      "id": "title",
+      "name": "Name",
+      "description": null,
+      "type": "title",
+      "title": {}
+    }
+  },
+  "title": [
+    {
+      "type": "text",
+      "text": {
+        "content": "العقل الثاني",
+        "link": null
+      },
+      "annotations": {
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "code": false,
+        "color": "default"
+      },
+      "plain_text": "العقل الثاني",
+      "href": null
+    }
+  ]
+}
