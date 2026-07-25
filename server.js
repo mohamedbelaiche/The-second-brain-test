@@ -57,7 +57,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware: if server config is empty, try to read from client-sent headers
+// Middleware: read settings from client-sent headers (localStorage is source of truth)
 app.use((req, res, next) => {
   const hKey = req.headers['x-notion-api-key'];
   const hDb = req.headers['x-notion-database-id'];
@@ -65,11 +65,11 @@ app.use((req, res, next) => {
   const hAiUrl = req.headers['x-ai-api-url'];
   const hAiModel = req.headers['x-ai-model'];
 
-  if (hKey && !config.notionApiKey) config.notionApiKey = hKey;
-  if (hDb && !config.notionDatabaseId) config.notionDatabaseId = hDb;
-  if (hAiKey && !config.aiApiKey) config.aiApiKey = hAiKey;
-  if (hAiUrl && !config.aiApiUrl) config.aiApiUrl = hAiUrl;
-  if (hAiModel && !config.aiModel) config.aiModel = hAiModel;
+  if (hKey) config.notionApiKey = hKey;
+  if (hDb) config.notionDatabaseId = hDb;
+  if (hAiKey) config.aiApiKey = hAiKey;
+  if (hAiUrl) config.aiApiUrl = hAiUrl;
+  if (hAiModel) config.aiModel = hAiModel;
 
   next();
 });

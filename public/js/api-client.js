@@ -39,18 +39,37 @@ async function checkServer() {
 // ----------------------------------------
 // SMART FETCH
 // Tries server first, falls back to direct Notion/AI API
+// Always sends settings from localStorage in headers so server can use them
 // ----------------------------------------
+
+function buildSettingsHeaders() {
+  const s = getLocalSettings();
+  const h = {};
+  if (s.notionApiKey) h['X-Notion-Api-Key'] = s.notionApiKey;
+  if (s.notionDatabaseId) h['X-Notion-Database-Id'] = s.notionDatabaseId;
+  if (s.aiApiKey) h['X-Ai-Api-Key'] = s.aiApiKey;
+  if (s.aiApiUrl) h['X-Ai-Api-Url'] = s.aiApiUrl;
+  if (s.aiModel) h['X-Ai-Model'] = s.aiModel;
+  return h;
+}
 
 async function smartFetch(path, options = {}) {
   const serverUp = await checkServer();
 
   if (serverUp) {
     try {
-      const res = await fetch(path, options);
+      const mergedHeaders = { ...buildSettingsHeaders(), ...(options.headers || {}) };
+      const res = await fetch(path, { ...options, headers: mergedHeaders });
       const text = await res.text();
-      const data = JSON.parse(text);
-      return data;
-    } catch {
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error('الخادم لم يُرجع بيانات صحيحة'); }
+      if (data.success === false && data.error) {
+        console.warn('Server returned error:', data.error, '- falling back to direct API');
+      } else {
+        return data;
+      }
+    } catch (e) {
+      console.warn('Server request failed:', e.message);
       _serverStatus = false;
     }
   }
