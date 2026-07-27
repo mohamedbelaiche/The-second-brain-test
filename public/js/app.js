@@ -22,10 +22,33 @@ function toggleSidebar() {
 // INIT
 // ----------------------------------------
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await syncSettingsFromServer();
+
+  if (!hasLocalSettings()) {
+    showSetupPrompt();
+    return;
+  }
+
   loadSchema();
   loadIdeas();
 });
+
+function showSetupPrompt() {
+  const grid = document.getElementById('ideas-grid');
+  grid.innerHTML = `
+    <div class="empty-state" style="grid-column:1/-1;">
+      <span class="empty-icon">⚙️</span>
+      <div class="empty-title">مرحباً بك في العقل الثاني!</div>
+      <div class="empty-desc">يبدو أن هذه أول مرة تفتح الموقع من هذا الجهاز.</div>
+      <div class="empty-desc" style="margin-top:8px;">يجب إعداد مفاتيح الاتصال أولاً للبدء.</div>
+      <button class="btn btn-primary" style="margin-top:20px;" onclick="openSettingsModal()">
+        ⚙️ إعداد الاتصال الآن
+      </button>
+    </div>`;
+
+  updateConnectionStatus(false);
+}
 
 async function loadSchema() {
   try {

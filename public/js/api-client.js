@@ -18,14 +18,24 @@ function saveLocalSettings(s) {
   localStorage.setItem('brain_settings', JSON.stringify(s));
 }
 
+function hasLocalSettings() {
+  const s = getLocalSettings();
+  return !!(s.notionApiKey && s.notionDatabaseId);
+}
+
 // ----------------------------------------
 // SERVER DETECTION
 // ----------------------------------------
 
 let _serverStatus = null;
+let _serverCheckTime = 0;
+const SERVER_CHECK_TTL = 30000;
 
 async function checkServer() {
-  if (_serverStatus !== null) return _serverStatus;
+  const now = Date.now();
+  if (_serverStatus !== null && (now - _serverCheckTime) < SERVER_CHECK_TTL) {
+    return _serverStatus;
+  }
   try {
     const res = await fetch('/api/status', { signal: AbortSignal.timeout(5000) });
     const text = await res.text();
@@ -34,11 +44,45 @@ async function checkServer() {
   } catch {
     _serverStatus = false;
   }
+  _serverCheckTime = now;
   return _serverStatus;
 }
 
 function resetServerStatus() {
   _serverStatus = null;
+  _serverCheckTime = 0;
+}
+
+// ----------------------------------------
+// SETTINGS SYNC
+// On first load from a new device, fetch settings
+// from the server and save to localStorage
+// ----------------------------------------
+
+async function syncSettingsFromServer() {
+  try {
+    const res = await fetch('/api/settings', { signal: AbortSignal.timeout(5000) });
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (data.success && data.settings) {
+      const s = data.settings;
+      if (s.notionApiKey || s.notionDatabaseId) {
+        const current = getLocalSettings();
+        const merged = {
+          notionApiKey: s.notionApiKey || current.notionApiKey || '',
+          notionDatabaseId: s.notionDatabaseId || current.notionDatabaseId || '',
+          aiApiKey: s.aiApiKey || current.aiApiKey || '',
+          aiApiUrl: s.aiApiUrl || current.aiApiUrl || '',
+          aiModel: s.aiModel || current.aiModel || '',
+        };
+        saveLocalSettings(merged);
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('Settings sync failed:', e.message);
+  }
+  return false;
 }
 
 // ----------------------------------------
@@ -77,7 +121,7 @@ async function smartFetch(path, options = {}) {
       return data;
     } catch (e) {
       console.warn('Server request failed:', e.message);
-      _serverStatus = false;
+      resetServerStatus();
     }
   }
 
@@ -142,3 +186,13 @@ function formatNotionPage(page) {
 
   return result;
 }
+
+// ----------------------------------------
+// AUTO-SYNC ON PAGE LOAD
+// When opening from a new device, fetch settings
+// from the server and store them in localStorage
+// ----------------------------------------
+
+(async function initSettingsSync() {
+  await syncSettingsFromServer();
+})();
